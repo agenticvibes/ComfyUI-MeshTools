@@ -123,12 +123,12 @@ class MeshToolsPostprocess:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "trimesh": ("TRIMESH",),
-                "remove_floaters": ("BOOLEAN", {"default": True}),
-                "remove_degenerate_faces": ("BOOLEAN", {"default": True}),
-                "reduce_faces": ("BOOLEAN", {"default": True}),
-                "max_facenum": ("INT", {"default": 40000, "min": 1, "max": 10000000, "step": 1}),
-                "smooth_normals": ("BOOLEAN", {"default": False}),
+                "trimesh": ("TRIMESH", {"tooltip": "Input 3D mesh to process"}),
+                "remove_floaters": ("BOOLEAN", {"default": True, "tooltip": "Remove small disconnected mesh fragments that float in space"}),
+                "remove_degenerate_faces": ("BOOLEAN", {"default": True, "tooltip": "Remove zero-area faces that can cause rendering artifacts"}),
+                "reduce_faces": ("BOOLEAN", {"default": True, "tooltip": "Reduce polygon count using quadric edge collapse decimation"}),
+                "max_facenum": ("INT", {"default": 40000, "min": 1, "max": 10000000, "step": 1, "tooltip": "Maximum number of faces after reduction. Only used when reduce_faces is enabled"}),
+                "smooth_normals": ("BOOLEAN", {"default": False, "tooltip": "Recalculate vertex normals for smoother shading"}),
             },
         }
 
@@ -163,12 +163,12 @@ class MeshToolsExport:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "trimesh": ("TRIMESH",),
-                "filename_prefix": ("STRING", {"default": "3D/Mesh"}),
-                "file_format": (["glb", "obj", "ply", "stl", "3mf", "dae"],),
+                "trimesh": ("TRIMESH", {"tooltip": "3D mesh to export"}),
+                "filename_prefix": ("STRING", {"default": "3D/Mesh", "tooltip": "Output path prefix relative to ComfyUI output directory"}),
+                "file_format": (["glb", "obj", "ply", "stl", "3mf", "dae"], {"tooltip": "3D file format. GLB recommended for web/game use, OBJ for editing"}),
             },
             "optional": {
-                "save_file": ("BOOLEAN", {"default": True}),
+                "save_file": ("BOOLEAN", {"default": True, "tooltip": "When disabled, exports to a temporary file instead of a numbered output"}),
             },
         }
 
@@ -204,7 +204,7 @@ class MeshToolsUVWrap:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "trimesh": ("TRIMESH",),
+                "trimesh": ("TRIMESH", {"tooltip": "3D mesh to UV unwrap. Required before texture painting"}),
             },
         }
 
@@ -255,13 +255,13 @@ class MeshToolsRemesh:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "trimesh": ("TRIMESH",),
-                "merge_vertices": ("BOOLEAN", {"default": True}),
-                "vertex_count": ("INT", {"default": 10000, "min": 100, "max": 10000000, "step": 1}),
-                "smooth_iter": ("INT", {"default": 8, "min": 0, "max": 100, "step": 1}),
-                "align_to_boundaries": ("BOOLEAN", {"default": True}),
-                "triangulate_result": ("BOOLEAN", {"default": True}),
-                "max_facenum": ("INT", {"default": 40000, "min": 1, "max": 10000000, "step": 1}),
+                "trimesh": ("TRIMESH", {"tooltip": "Input mesh to remesh. Note: vertex colors and textures will be removed"}),
+                "merge_vertices": ("BOOLEAN", {"default": True, "tooltip": "Merge duplicate vertices before remeshing for cleaner topology"}),
+                "vertex_count": ("INT", {"default": 10000, "min": 100, "max": 10000000, "step": 1, "tooltip": "Target number of vertices in the remeshed output"}),
+                "smooth_iter": ("INT", {"default": 8, "min": 0, "max": 100, "step": 1, "tooltip": "Number of Laplacian smoothing iterations. Higher = smoother but may lose detail"}),
+                "align_to_boundaries": ("BOOLEAN", {"default": True, "tooltip": "Align remeshed edges to the original mesh boundaries"}),
+                "triangulate_result": ("BOOLEAN", {"default": True, "tooltip": "Convert quad faces to triangles in the output"}),
+                "max_facenum": ("INT", {"default": 40000, "min": 1, "max": 10000000, "step": 1, "tooltip": "Maximum face count after remeshing. Applies decimation if exceeded"}),
             },
         }
 
@@ -311,27 +311,27 @@ class MeshToolsDecimate:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "trimesh": ("TRIMESH",),
-                "subdivideParts": ("INT", {"default": 16, "min": 1, "max": 64, "step": 1, "tooltip": "Number of CPU cores to use"}),
+                "trimesh": ("TRIMESH", {"tooltip": "Input mesh to decimate"}),
+                "subdivideParts": ("INT", {"default": 16, "min": 1, "max": 64, "step": 1, "tooltip": "Number of parallel threads for decimation. Match to your CPU core count"}),
             },
             "optional": {
-                "target_face_num": ("INT", {"min": 0, "max": 10000000}),
-                "target_face_ratio": ("FLOAT", {"min": 0.000, "max": 0.999}),
-                "strategy": (["None", "MinimizeError", "ShortestEdgeFirst"], {"default": "None"}),
-                "maxError": ("FLOAT", {"min": 0.0, "max": 1.0}),
-                "maxEdgeLen": ("FLOAT",),
-                "maxBdShift": ("FLOAT",),
-                "maxTriangleAspectRatio": ("FLOAT",),
-                "criticalTriAspectRatio": ("FLOAT",),
-                "tinyEdgeLength": ("FLOAT",),
-                "stabilizer": ("FLOAT",),
-                "angleWeightedDistToPlane": ("BOOLEAN",),
-                "optimizeVertexPos": ("BOOLEAN",),
-                "collapseNearNotFlippable": ("BOOLEAN",),
-                "touchNearBdEdges": ("BOOLEAN",),
-                "maxAngleChange": ("FLOAT",),
-                "decimateBetweenParts": ("BOOLEAN",),
-                "minFacesInPart": ("INT",),
+                "target_face_num": ("INT", {"min": 0, "max": 10000000, "tooltip": "Absolute target face count. Set either this or target_face_ratio"}),
+                "target_face_ratio": ("FLOAT", {"min": 0.000, "max": 0.999, "tooltip": "Target as fraction of original faces (0.5 = half). Set either this or target_face_num"}),
+                "strategy": (["None", "MinimizeError", "ShortestEdgeFirst"], {"default": "None", "tooltip": "Decimation priority: MinimizeError preserves shape, ShortestEdgeFirst is faster"}),
+                "maxError": ("FLOAT", {"min": 0.0, "max": 1.0, "tooltip": "Maximum geometric error allowed per decimation step. Lower = more accurate"}),
+                "maxEdgeLen": ("FLOAT", {"tooltip": "Maximum allowed edge length after decimation"}),
+                "maxBdShift": ("FLOAT", {"tooltip": "Maximum boundary vertex displacement during decimation"}),
+                "maxTriangleAspectRatio": ("FLOAT", {"tooltip": "Reject decimations that create thin triangles above this ratio"}),
+                "criticalTriAspectRatio": ("FLOAT", {"tooltip": "Hard limit on triangle aspect ratio — decimation steps that exceed this are rejected"}),
+                "tinyEdgeLength": ("FLOAT", {"tooltip": "Edges shorter than this are prioritized for collapse"}),
+                "stabilizer": ("FLOAT", {"tooltip": "Stabilization factor to prevent oscillation during optimization"}),
+                "angleWeightedDistToPlane": ("BOOLEAN", {"tooltip": "Weight error metric by face angles for more perceptually uniform results"}),
+                "optimizeVertexPos": ("BOOLEAN", {"tooltip": "Optimize vertex positions after each collapse for better shape preservation"}),
+                "collapseNearNotFlippable": ("BOOLEAN", {"tooltip": "Allow collapsing edges near non-flippable boundaries"}),
+                "touchNearBdEdges": ("BOOLEAN", {"tooltip": "Allow decimation of edges near mesh boundaries"}),
+                "maxAngleChange": ("FLOAT", {"tooltip": "Maximum allowed change in face normal angle per step (radians)"}),
+                "decimateBetweenParts": ("BOOLEAN", {"tooltip": "Allow decimation across part boundaries in multi-part meshes"}),
+                "minFacesInPart": ("INT", {"tooltip": "Minimum faces to keep in each mesh part during parallel decimation"}),
             },
         }
 
@@ -408,12 +408,12 @@ class MeshToolsSimpleDecimate:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "trimesh": ("TRIMESH",),
+                "trimesh": ("TRIMESH", {"tooltip": "Input mesh to decimate"}),
                 "subdivideParts": ("INT", {"default": 16, "min": 1, "max": 64, "step": 1, "tooltip": "Number of CPU cores to use"}),
             },
             "optional": {
-                "target_face_num": ("INT", {"min": 0, "max": 10000000}),
-                "target_face_ratio": ("FLOAT", {"min": 0.000, "max": 0.999}),
+                "target_face_num": ("INT", {"min": 0, "max": 10000000, "tooltip": "Target face count. Set either this or target_face_ratio"}),
+                "target_face_ratio": ("FLOAT", {"min": 0.000, "max": 0.999, "tooltip": "Target as fraction of original (0.5 = half). Set either this or target_face_num"}),
             },
         }
 
